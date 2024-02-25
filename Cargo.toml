@@ -1,0 +1,7 @@
+[package]
+name = "ahash_collisions"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ahash = { version = "0.8.9", optional = false }
