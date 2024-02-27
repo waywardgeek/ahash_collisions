@@ -12,7 +12,7 @@ pub(crate) const fn folded_multiply(s: u64, by: u64) -> u64 {
 
 #[inline(always)]
 fn hash_u64(v: u64, hash_secret: u64) -> u64 {
-    let v1 = (v + hash_secret) ^ ((v << 32) | (v >> 32));
+    let v1 = (v + hash_secret) ^ v.rotate_left(32);
     folded_multiply(v1, 0x9d46_0858_ea81_ac79)
 }
 
