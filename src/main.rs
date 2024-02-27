@@ -5,15 +5,10 @@ use std::io::Write;
 extern crate ahash;
 
 #[inline(always)]
-pub(crate) const fn folded_multiply(s: u64, by: u64) -> u64 {
-    let result = (s as u128).wrapping_mul(by as u128);
-    (result as u64) ^ ((result >> 64) as u64)
-}
-
-#[inline(always)]
 fn hash_u64(v: u64, hash_secret: u64) -> u64 {
     let v1 = (v + hash_secret) ^ v.rotate_left(32);
-    folded_multiply(v1, 0x9d46_0858_ea81_ac79)
+    let v2 = (v1 as u128).wrapping_mul(0x9d46_0858_ea81_ac79);
+    v ^ (v2 as u64) ^ ((v2 >> 64) as u64)
 }
 
 struct Rand {
@@ -135,7 +130,7 @@ fn main() {
             }
         }
     } else if args[1] == "-ca" {
-        for i in 0..100 {
+        for i in 0..10 {
             let res = find_cycle_len(0x10_0000_0000, hash_secret + i, true);
             if res != 0 {
                 println!("sequence length =  {:#x} ({})", res, res);
