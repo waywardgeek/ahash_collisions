@@ -4,12 +4,16 @@ use std::io::Write;
 
 extern crate ahash;
 
-#[inline]
+#[inline(always)]
+pub(crate) const fn folded_multiply(s: u64, by: u64) -> u64 {
+    let result = (s as u128).wrapping_mul(by as u128);
+    (result as u64) ^ ((result >> 64) as u64)
+}
+
+#[inline(always)]
 fn hash_u64(v: u64, hash_secret: u64) -> u64 {
-    let v1 = u64::wrapping_mul((v + hash_secret) ^ (v >> 32), 0x9d46_0858_ea81_ac79);
-    let v2 = u64::wrapping_add(v1, v1 >> 32);
-    let v3 = u64::wrapping_mul((v2 + hash_secret) ^ (v2 >> 32), 0xe177_d33d_28e7_10c5);
-    u64::wrapping_add(v3, v3 >> 32)
+    let v1 = (v + hash_secret) ^ ((v << 32) | (v >> 32));
+    folded_multiply(v1, 0x9d46_0858_ea81_ac79)
 }
 
 struct Rand {
@@ -58,8 +62,8 @@ fn reduce(x: u32, n: u32) -> usize {
 fn dist_test(hash_secret: u64, use_ahash: bool) {
     let table_size = 1usize << 28;
     for tweak in 0..100 {
-        // let in_shift = hash_u64(hash_u64(tweak, 0x123), 0x456) & 0x1f;
-        // let out_shift = hash_u64(hash_u64(tweak, 0x789), 0xabc) & 0x1f;
+        let in_shift = hash_u64(hash_u64(tweak, 0x123), 0x456) & 0x1f;
+        let out_shift = hash_u64(hash_u64(tweak, 0x789), 0xabc) & 0x1f;
         let hash_secret = hash_u64(hash_secret, tweak);
         let hasher = RandomState::with_seed(hash_secret as usize);
         let mut table: Vec<bool> = Vec::default();
@@ -68,7 +72,7 @@ fn dist_test(hash_secret: u64, use_ahash: bool) {
             let mut h;
             if !use_ahash {
                 h = reduce(
-                    (hash_u64((i as u64) << /* in_shift */ 30, hash_secret) >> /* out_shift */ 0) as u32,
+                    (hash_u64((i as u64) << in_shift, hash_secret) >> out_shift) as u32,
                     table_size as u32,
                 );
             } else {
@@ -122,17 +126,21 @@ fn main() {
         usage();
         return;
     } else if args[1] == "-c" {
-        for i in 0..100 {
-            let res = find_cycle_len(0x1_0000_0000, hash_secret + i, false);
+        for i in 0..10 {
+            let res = find_cycle_len(0x10_0000_0000, hash_secret + i, false);
             if res != 0 {
                 println!("sequence length =  {:#x} ({})", res, res);
+            } else {
+                println!("sequence too long");
             }
         }
     } else if args[1] == "-ca" {
         for i in 0..100 {
-            let res = find_cycle_len(0x1_0000_0000, hash_secret + i, true);
+            let res = find_cycle_len(0x10_0000_0000, hash_secret + i, true);
             if res != 0 {
                 println!("sequence length =  {:#x} ({})", res, res);
+            } else {
+                println!("sequence too long");
             }
         }
     } else if args[1] == "-r" {

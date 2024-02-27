@@ -4,4 +4,4 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-ahash = { version = "*", optional = false }
+ahash = { path = "../aHash", optional = false }
