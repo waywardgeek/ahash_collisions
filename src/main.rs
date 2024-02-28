@@ -57,8 +57,12 @@ fn reduce(x: u32, n: u32) -> usize {
 fn dist_test(hash_secret: u64, use_ahash: bool) {
     let table_size = 1usize << 28;
     for tweak in 0..100 {
-        let in_shift = hash_u64(hash_u64(tweak, 0x123), 0x456) & 0x1f;
-        let out_shift = hash_u64(hash_u64(tweak, 0x789), 0xabc) & 0x1f;
+        let mut in_shift = hash_u64(hash_u64(tweak, 0x123), 0x456) & 0x1f;
+        let mut out_shift = hash_u64(hash_u64(tweak, 0x789), 0xabc) & 0x1f;
+        if use_ahash {
+            in_shift = 30;
+            out_shift = 0;
+        }
         let hash_secret = hash_u64(hash_secret, tweak);
         let hasher = RandomState::with_seed(hash_secret as usize);
         let mut table: Vec<bool> = Vec::default();
