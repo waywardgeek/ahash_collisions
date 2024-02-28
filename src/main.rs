@@ -7,7 +7,7 @@ extern crate ahash;
 #[inline(always)]
 fn hash_u64(v: u64, hash_secret: u64) -> u64 {
     let v1 = v.wrapping_add(hash_secret) ^ v.rotate_left(32);
-    let v2 = (v1 as u128).wrapping_mul(0x9d46_0858_ea81_ac79);
+    let v2 = (v1 as u128) * 0x9d46_0858_ea81_ac79;
     v ^ (v2 as u64) ^ ((v2 >> 64) as u64)
 }
 
@@ -50,8 +50,10 @@ fn find_cycle_len(limit: usize, hash_secret: u64, use_ahash: bool) -> usize {
     0
 }
 
-fn reduce(x: u32, n: u32) -> usize {
-    (((x as u64) * (n as u64)) >> 32) as usize
+// This unusual method for reducing a hash into a table index allows users to reserve an exact
+// swiss table size, rathe than growing by 2X every time it becomes 60% full.
+fn reduce(x: u64, n: u64) -> usize {
+    (((x as u128) * (n as u128)) >> 64) as usize
 }
 
 fn dist_test(hash_secret: u64, use_ahash: bool) {
@@ -71,8 +73,8 @@ fn dist_test(hash_secret: u64, use_ahash: bool) {
             let mut h;
             if !use_ahash {
                 h = reduce(
-                    (hash_u64((i as u64) << in_shift, hash_secret) >> out_shift) as u32,
-                    table_size as u32,
+                    hash_u64((i as u64) << in_shift, hash_secret).rotate_right(out_shift as u32) as u64,
+                    table_size as u64,
                 );
             } else {
                 h = ((hasher.hash_one(i << /* in_shift */ 30)) >> /* out_shift */ 0) as usize & (table_size - 1);
