@@ -146,7 +146,7 @@ fn main() {
         }
     } else if args[1] == "-t" {
         let mut total = 0;
-        for i in 0..1 << 30 {
+        for i in 0..1_000_000_000 {
             let val = hash_u64(i, hash_secret);
             total += val;
         }
@@ -154,7 +154,7 @@ fn main() {
     } else if args[1] == "-ta" {
         let hasher = RandomState::with_seed(hash_secret as usize);
         let mut total = 0;
-        for i in 0..1 << 30 {
+        for i in 0..1_000_000_000 {
             let val = hasher.hash_one(i);
             total += val;
         }
